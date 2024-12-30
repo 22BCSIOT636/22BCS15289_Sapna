@@ -1,0 +1,100 @@
+// SPDX-License-Identifier: MIT            
+pragma solidity ^0.8.0;                      // Defines the Solidity version to be used (0.8.0 or higher)
+
+// Main contract for processing insurance claims
+contract InsuranceClaimProcessor {           // Defines the main contract named InsuranceClaimProcessor
+    // Defines the structure for storing claim information
+    struct Claim {                           // Creates a struct named Claim to hold claim data
+        uint256 claimId;                     // Unique identifier for each claim
+        string customerName;                  // Stores the name of customer who filed the claim
+        string policyType;                   // Type of insurance policy (health, auto, etc.)
+        uint256 amount;                      // Amount of money being claimed
+        string description;                  // Detailed description of the claim incident
+        string status;                       // Current status of the claim (Pending, Approved, etc.)
+        string documents;                    // References to supporting documents
+    }
+    
+    Claim[] public claims;                   // Array to store all claims in the system
+    address public manager;                  // Address of the contract administrator
+    mapping(uint256 => Claim) public claimHistory; // Mapping to store claims with their IDs for quick access
+    uint256 public totalClaims = 0;         // Counter to keep track of total number of claims
+    
+    // Constructor function that runs when contract is deployed
+    constructor() {                          // Initializes the contract
+        manager = msg.sender;                // Sets the contract deployer as the manager
+    }
+    
+    // Function to submit a new insurance claim
+    function submitClaim(                    // Function declaration for submitting a new claim
+        string memory _customerName,         // Parameter for customer name
+        string memory _policyType,           // Parameter for type of policy
+        uint256 _amount,                     // Parameter for claim amount
+        string memory _description,          // Parameter for claim description
+        string memory _documents            // Parameter for document references
+    ) public returns (uint256) {            // Function returns the new claim ID
+        uint256 newClaimId = totalClaims + 1; // Generate new claim ID by incrementing total claims
+        
+        // Create a new claim object with all the details
+        Claim memory newClaim = Claim({     // Creates new Claim struct in memory
+            claimId: newClaimId,             // Assigns the new claim ID
+            customerName: _customerName,      // Sets the customer name
+            policyType: _policyType,         // Sets the policy type
+            amount: _amount,                 // Sets the claim amount
+            description: _description,        // Sets the claim description
+            status: "Pending",               // Sets initial status as "Pending"
+            documents: _documents            // Sets the document references
+        });
+        
+        claims.push(newClaim);               // Adds the new claim to the claims array
+        claimHistory[newClaimId] = newClaim; // Adds the claim to the mapping for quick lookup
+        totalClaims++;                      // Increments the total claims counter
+        
+        return newClaimId;                  // Returns the ID of the new claim
+    }
+    
+    // Function to update the status of an existing claim
+    function updateClaimStatus(              // Function declaration for updating claim status
+        uint256 _claimId,                   // Parameter for claim ID to update
+        string memory _newStatus             // Parameter for new status to set
+    ) public {
+        require(_claimId <= totalClaims, "Claim does not exist");  // Checks if claim ID is valid
+        claimHistory[_claimId].status = _newStatus;               // Updates status in mapping
+        
+        // Updates status in claims array by finding matching claim
+        for(uint i = 0; i < claims.length; i++) {                 // Loops through all claims
+            if(claims[i].claimId == _claimId) {                   // Finds matching claim ID
+                claims[i].status = _newStatus;                     // Updates the status
+                break;                                            // Exits the loop after update
+            }
+        }
+    }
+    
+    // Function to get details of a specific claim
+    function getClaimDetails(                // Function declaration for getting claim details
+        uint256 _claimId                    // Parameter for claim ID to retrieve
+    ) public view returns (                  // Function returns multiple values
+        string memory customerName,          // Return parameter for customer name
+        string memory policyType,            // Return parameter for policy type
+        uint256 amount,                     // Return parameter for amount
+        string memory description,           // Return parameter for description
+        string memory status                 // Return parameter for status
+    ) {
+        require(_claimId <= totalClaims, "Claim does not exist");  // Checks if claim ID is valid
+        Claim memory claim = claimHistory[_claimId];              // Gets claim from mapping
+        
+        return (                             // Returns all claim details
+            claim.customerName,              // Returns customer name
+            claim.policyType,                // Returns policy type
+            claim.amount,                    // Returns claim amount
+            claim.description,               // Returns claim description
+            claim.status                     // Returns claim status
+        );
+    }
+    
+    // Function to get all claims in the system
+    function getAllClaims(                   // Function declaration for getting all claims
+    ) public view returns (Claim[] memory) { // Returns array of all claims
+        return claims;                      // Returns the complete claims array
+    }
+}
+
